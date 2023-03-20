@@ -5,9 +5,13 @@ import lombok.Getter;
 import lombok.Setter;
 import net.villenium.game.api.athena.annotation.Id;
 
+import net.villenium.game.api.athena.annotation.IgnoreField;
 import net.villenium.game.api.user.User;
 import net.villenium.skywars.SkyWars;
+import net.villenium.skywars.shards.LobbyShard;
+import net.villenium.skywars.shards.Shard;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -23,6 +27,9 @@ public class GamePlayer {
     private int coins;
     private int souls;
 
+    @IgnoreField
+    private Shard shard;
+
     public Player getHandle() {
         return Bukkit.getPlayerExact(name);
     }
@@ -37,6 +44,18 @@ public class GamePlayer {
 
     public static GamePlayer wrap(User user) {
         return wrap(user.getName());
+    }
+
+    public void moveToShard(Shard shard) {
+        this.shard = shard;
+        shard.addPlayer(this.getHandle());
+        this.getHandle().teleport(shard.getWorld().getSpawnLocation());
+    }
+
+    public void moveToShard(Shard shard, Location location) {
+        this.shard = shard;
+        shard.addPlayer(this.getHandle());
+        this.getHandle().teleport(location);
     }
 
     public void resetPlayer() {

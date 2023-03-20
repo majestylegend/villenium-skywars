@@ -3,12 +3,17 @@ package net.villenium.skywars;
 import lombok.Getter;
 import net.villenium.game.api.GameApi;
 import net.villenium.game.api.command.CommandManager;
-import net.villenium.skywars.enums.PluginMode;
+import net.villenium.skywars.enums.GameType;
+import net.villenium.skywars.handler.GameHandler;
 import net.villenium.skywars.handler.LobbyHandler;
 import net.villenium.skywars.player.PlayerManager;
+import net.villenium.skywars.shards.LobbyShard;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import net.villenium.skywars.handler.GlobalHandler;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SkyWars extends JavaPlugin {
 
@@ -18,27 +23,23 @@ public class SkyWars extends JavaPlugin {
     @Getter
     private PlayerManager playerManager;
 
-    @Getter
-    public static PluginMode pluginMode;
-
     @Override
     public void onEnable() {
         instance = this;
         playerManager = new PlayerManager();
         playerManager.initialize();
         registerCommands();
-        if (!this.getConfig().isSet("plugin-mode")) {
-            this.getConfig().set("plugin-mode", "lobby");
-            saveConfig();
-        }
-        pluginMode = PluginMode.valueOf(this.getConfig().getString("plugin-mode").toUpperCase());
+        registerHandlers();
+        new LobbyShard("lobby");
+    }
 
-        if(pluginMode == PluginMode.GAME) {
-
-        } else {
-            Bukkit.getPluginManager().registerEvents(new LobbyHandler(), this);
-        }
+    private void registerHandlers() {
+        //Обрабатывается на игровом и лобби шардах
         Bukkit.getPluginManager().registerEvents(new GlobalHandler(), this);
+        //Обрабатывается только в лобби шарде
+        Bukkit.getPluginManager().registerEvents(new LobbyHandler(), this);
+        //Обрабатывается тольно на игровых шардах
+        Bukkit.getPluginManager().registerEvents(new GameHandler(), this);
     }
 
     private void registerCommands() {
