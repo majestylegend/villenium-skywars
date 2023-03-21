@@ -4,6 +4,7 @@ import java.util.logging.Level;
 
 import lombok.Getter;
 import net.villenium.skywars.SkyWars;
+import net.villenium.skywars.utils.WorldUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -12,6 +13,7 @@ public class LobbyShard extends Shard {
 
     public LobbyShard(String id) {
         super(id);
+        WorldUtil.copyWorld("lobby", this.getId());
         this.setWorld(Bukkit.getWorld(this.getId()));
         this.getWorld().getEntities().forEach((l) -> {
             if(!(l instanceof Player)) l.remove();

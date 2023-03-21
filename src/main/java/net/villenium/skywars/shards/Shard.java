@@ -21,7 +21,6 @@ import org.bukkit.entity.Player;
 @Setter
 public class Shard {
    private static final Map<String, Shard> shards = new ConcurrentHashMap();
-   private static final Map<String, String> waitingFor = new HashMap();
    private static final Set<Shard> pendingRestoring = new HashSet();
    private String id;
    private World world;
@@ -32,17 +31,27 @@ public class Shard {
       return (Shard)shards.get(id);
    }
 
-   public static void waitPlayers(Collection<String> players, String shardId) {
-      players.forEach((p) -> {
-         waitingFor.put(p.toLowerCase(), shardId);
-      });
-   }
 
    private static void toLobby(Player p, String msg) {
       p.sendMessage(ChatUtil.colorize(msg));
       Task.schedule(() -> {
          GamePlayer.wrap(p).moveToShard(shards.get("lobby"));
       }, 5L);
+   }
+
+   public static void processJoinEvent(Player p) {
+      String shardId = GamePlayer.wrap(p).getShard().getId();
+      if (shardId == null) {
+         toLobby(p, "&cМы не нашли игровой шард, к которому вы подключаетесь.");
+      } else {
+         Shard shard = (Shard) shards.get(shardId);
+         if (shard == null) {
+            toLobby(p, "&cИгровой шард, к которому вы подключаетесь, не существует! Свяжитесь с администрацией проекта.");
+         } else {
+            shard.addPlayer(p);
+         }
+      }
+
    }
 
    public static void processQuitEvent(Player p) {
@@ -93,5 +102,25 @@ public class Shard {
       this.id = null;
       this.world = null;
       this.players.clear();
+   }
+
+   public static void invalidateAll() {
+      shards.values().forEach((shard -> {
+         shard.invalidate();
+      }));
+   }
+
+   public final void broadcastRaw(String msg) {
+      this.players.forEach((p) -> {
+         p.sendMessage(msg);
+      });
+   }
+
+   public final void b(String msg) {
+      this.broadcastRaw(ChatUtil.colorize(msg));
+   }
+
+   public static void broadcastRaw(Player p, String msg) {
+      GamePlayer.wrap(p).getShard().broadcastRaw(msg);
    }
 }

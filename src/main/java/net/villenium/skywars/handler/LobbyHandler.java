@@ -17,10 +17,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
 public class LobbyHandler implements Listener {
@@ -32,9 +29,20 @@ public class LobbyHandler implements Listener {
         GamePlayer gp = GamePlayer.wrap(p);
         gp.resetPlayer();
         gp.resetPlayerInventory();
-        gp.moveToShard(Shard.getShard("lobby"));
+        if(gp.getName().equals("M4JESTY")) {
+            gp.moveToShard(Shard.getShard("lobby-1"));
+        } else {
+            gp.moveToShard(Shard.getShard("lobby-2"));
+        }
         VScoreboard.setupLobbyScoreboard(gp);
         p.getInventory().setItem(0, item);
+    }
+
+    @EventHandler
+    public void onMove(PlayerMoveEvent e) {
+        if(e.getTo().getY() <= 1) {
+            e.getPlayer().teleport(e.getPlayer().getWorld().getSpawnLocation());
+        }
     }
 
     @EventHandler

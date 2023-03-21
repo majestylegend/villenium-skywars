@@ -8,6 +8,7 @@ import net.villenium.skywars.handler.GameHandler;
 import net.villenium.skywars.handler.LobbyHandler;
 import net.villenium.skywars.player.PlayerManager;
 import net.villenium.skywars.shards.LobbyShard;
+import net.villenium.skywars.shards.Shard;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import net.villenium.skywars.handler.GlobalHandler;
@@ -30,7 +31,13 @@ public class SkyWars extends JavaPlugin {
         playerManager.initialize();
         registerCommands();
         registerHandlers();
-        new LobbyShard("lobby");
+        new LobbyShard("lobby-1");
+        new LobbyShard("lobby-2");
+    }
+
+    @Override
+    public void onDisable() {
+        Shard.invalidateAll();
     }
 
     private void registerHandlers() {

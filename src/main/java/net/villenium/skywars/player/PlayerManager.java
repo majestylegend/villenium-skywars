@@ -13,7 +13,7 @@ public class PlayerManager {
 
     public void initialize() {
         objectPool = PLAYERS.newObjectPool();
-        objectPool.setDefaultObject(new GamePlayer(null, 0, 0, 0, 0));
+        objectPool.setDefaultObject(new GamePlayer(null, 0, 0, 0, 0, null));
     }
 
 }

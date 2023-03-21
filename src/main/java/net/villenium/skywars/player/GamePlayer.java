@@ -15,6 +15,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import java.util.Collection;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -48,8 +50,23 @@ public class GamePlayer {
 
     public void moveToShard(Shard shard) {
         this.shard = shard;
-        shard.addPlayer(this.getHandle());
+        Shard.processQuitEvent(this.getHandle());
+        Shard.processJoinEvent(this.getHandle());
         this.getHandle().teleport(shard.getWorld().getSpawnLocation());
+        Shard game = this.getShard();
+        if (game != null) {
+            Collection<Player> thatShard = game.getPlayers();
+            Bukkit.getOnlinePlayers().stream().filter((p2) -> {
+                return !thatShard.contains(p2);
+            }).forEach((p2) -> {
+                p2.hidePlayer(this.getHandle());
+                this.getHandle().hidePlayer(p2);
+            });
+            thatShard.forEach((p2) -> {
+                p2.showPlayer(this.getHandle());
+                this.getHandle().showPlayer(p2);
+            });
+        }
     }
 
     public void moveToShard(Shard shard, Location location) {
