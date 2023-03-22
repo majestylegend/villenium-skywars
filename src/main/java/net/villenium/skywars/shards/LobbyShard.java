@@ -1,11 +1,12 @@
 package net.villenium.skywars.shards;
 
-import java.util.logging.Level;
-
 import lombok.Getter;
-import net.villenium.skywars.SkyWars;
+import net.villenium.skywars.handler.LobbyHandler;
+import net.villenium.skywars.player.GamePlayer;
+import net.villenium.skywars.player.VScoreboard;
 import net.villenium.skywars.utils.WorldUtil;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 
 @Getter
@@ -16,18 +17,22 @@ public class LobbyShard extends Shard {
         WorldUtil.copyWorld("lobby", this.getId());
         this.setWorld(Bukkit.getWorld(this.getId()));
         this.getWorld().getEntities().forEach((l) -> {
-            if(!(l instanceof Player)) l.remove();
+            if (!(l instanceof Player)) l.remove();
         });
         this.setSleeping(false);
-        SkyWars.getInstance().getLogger().log(Level.INFO, "LobbyShard %d is not sleeping now!", new Object[]{this.getId()});
+    }
+
+    public void setupPlayer(Player player) {
+        GamePlayer gp = GamePlayer.wrap(player);
+        gp.resetPlayer();
+        gp.resetPlayerInventory();
+        gp.getHandle().setGameMode(GameMode.SURVIVAL);
+        player.getInventory().setItem(0, LobbyHandler.item);
+        player.getInventory().setItem(8, LobbyHandler.lobby);
+        VScoreboard.setupLobbyScoreboard(gp);
     }
 
     protected void invalidate() {
-        try {
-            throw new Exception("LobbyShard " + this.getId() + " is invalidating!");
-        } catch (Exception var3) {
-            var3.printStackTrace();
-            super.invalidate();
-        }
+        super.invalidate();
     }
 }

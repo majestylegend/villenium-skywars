@@ -40,8 +40,8 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.destroystokyo.paper</groupId>
-            <artifactId>paper-api</artifactId>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot</artifactId>
             <version>1.12.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
@@ -60,14 +60,9 @@
         <dependency>
             <groupId>net.villenium</groupId>
             <artifactId>villenium-os</artifactId>
-            <version>1.1.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.comphenix.protocol</groupId>
-            <artifactId>ProtocolLib</artifactId>
-            <version>4.5.0</version>
-            <scope>provided</scope>
+            <version>1.1.2</version>
+            <systemPath>${basedir}/libs/villenium-os-1.1.2.jar</systemPath>
+            <scope>system</scope>
         </dependency>
     </dependencies>
     <build>
@@ -104,7 +99,8 @@
                         </goals>
                         <configuration>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>

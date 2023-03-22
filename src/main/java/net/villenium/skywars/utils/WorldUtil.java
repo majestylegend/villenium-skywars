@@ -11,10 +11,10 @@ import java.util.Arrays;
 public class WorldUtil {
 
     public static void deleteWorld(File path) {
-        if(path.exists()) {
+        if (path.exists()) {
             File files[] = path.listFiles();
-            for(int i=0; i<files.length; i++) {
-                if(files[i].isDirectory()) {
+            for (int i = 0; i < files.length; i++) {
+                if (files[i].isDirectory()) {
                     deleteWorld(files[i]);
                 } else {
                     files[i].delete();
@@ -26,10 +26,10 @@ public class WorldUtil {
 
     public static void deleteWorld(World world) {
         File path = world.getWorldFolder();
-        if(path.exists()) {
+        if (path.exists()) {
             File files[] = path.listFiles();
-            for(int i=0; i<files.length; i++) {
-                if(files[i].isDirectory()) {
+            for (int i = 0; i < files.length; i++) {
+                if (files[i].isDirectory()) {
                     deleteWorld(files[i]);
                 } else {
                     files[i].delete();
@@ -41,12 +41,12 @@ public class WorldUtil {
     }
 
     public static void deleteWorld(String world) {
-        if(Bukkit.getWorld(world) == null) return;
+        if (Bukkit.getWorld(world) == null) return;
         File path = Bukkit.getWorld(world).getWorldFolder();
-        if(path.exists()) {
+        if (path.exists()) {
             File files[] = path.listFiles();
-            for(int i=0; i<files.length; i++) {
-                if(files[i].isDirectory()) {
+            for (int i = 0; i < files.length; i++) {
+                if (files[i].isDirectory()) {
                     deleteWorld(files[i]);
                 } else {
                     files[i].delete();
@@ -58,7 +58,7 @@ public class WorldUtil {
     }
 
     public static void copyWorld(String worldToCopy, String newWorld) {
-        if(Bukkit.getWorld(worldToCopy) == null) return;
+        if (Bukkit.getWorld(worldToCopy) == null) return;
 
         File source = Bukkit.getWorld(worldToCopy).getWorldFolder();
         World newW = Bukkit.createWorld(new WorldCreator(newWorld));
@@ -66,9 +66,9 @@ public class WorldUtil {
 
         try {
             ArrayList<String> ignore = new ArrayList<String>(Arrays.asList("uid.dat", "session.dat"));
-            if(!ignore.contains(source.getName())) {
-                if(source.isDirectory()) {
-                    if(!target.exists())
+            if (!ignore.contains(source.getName())) {
+                if (source.isDirectory()) {
+                    if (!target.exists())
                         target.mkdirs();
                     String files[] = source.list();
                     for (String file : files) {
@@ -97,9 +97,9 @@ public class WorldUtil {
     public static void copyWorld(File source, File target) {
         try {
             ArrayList<String> ignore = new ArrayList<String>(Arrays.asList("uid.dat", "session.dat"));
-            if(!ignore.contains(source.getName())) {
-                if(source.isDirectory()) {
-                    if(!target.exists())
+            if (!ignore.contains(source.getName())) {
+                if (source.isDirectory()) {
+                    if (!target.exists())
                         target.mkdirs();
                     String files[] = source.list();
                     for (String file : files) {

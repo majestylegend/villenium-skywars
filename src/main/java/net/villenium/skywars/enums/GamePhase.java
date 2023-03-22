@@ -2,8 +2,7 @@ package net.villenium.skywars.enums;
 
 import net.villenium.game.api.util.ChatUtil;
 
-public enum GamePhase
-{
+public enum GamePhase {
     WAITING("&eОжидание"),
     PREGAME("&eНачало игры"),
     INGAME("&aИгра идет"),
