@@ -7,12 +7,15 @@ import net.villenium.game.api.athena.ObjectPool;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class PlayerManager {
 
     private AthenaStorage<GamePlayer> PLAYERS = GameApi.getStorageManager().create("skywars_players", GamePlayer.class);
     @Getter
     private ObjectPool<GamePlayer> objectPool;
+
+    public static Map<String, GamePlayer> cache = new HashMap<>();
 
     public void initialize() {
         objectPool = PLAYERS.newObjectPool();

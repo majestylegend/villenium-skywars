@@ -20,7 +20,7 @@ public enum GameType {
     }
 
     public String getName() {
-        return ChatUtil.colorize("%s%s", new Object[]{this.name, ""});
+        return ChatUtil.colorize("%s%s", this.name, "");
     }
 
     public boolean isInsane() {

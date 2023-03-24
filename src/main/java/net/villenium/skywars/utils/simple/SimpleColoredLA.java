@@ -12,7 +12,7 @@ public class SimpleColoredLA extends ItemStack {
         super(type, 1);
         final LeatherArmorMeta lam = (LeatherArmorMeta) this.getItemMeta();
         lam.setColor(color);
-        lam.setDisplayName(ChatUtil.colorize("&f%s", new Object[]{name}));
+        lam.setDisplayName(ChatUtil.colorize("&f%s", name));
         this.setItemMeta((ItemMeta) lam);
     }
 }

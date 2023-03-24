@@ -32,14 +32,10 @@ import java.util.concurrent.TimeUnit;
 @Setter
 public class GamePlayer {
 
-    @IgnoreField
-    public static final Map<String, GamePlayer> players = new HashMap<>();
-    @IgnoreField
-    public static final Map<GameShard, Set<GamePlayer>> thisGamePlayers = new HashMap();
     @Id
     private final String name;
     @IgnoreField
-    private final LoadingCache<Player, Long> lastDamagers;
+    private LoadingCache<Player, Long> lastDamagers;
     Map<GameClass, Integer> classes;
     GameClass selectedClass;
     List<Cage> cages;
@@ -91,24 +87,11 @@ public class GamePlayer {
     }
 
     public static GamePlayer wrap(String name) {
-        GamePlayer gp = null;
-        if (!players.containsKey(name))
-            players.put(name, gp = SkyWars.getInstance().getPlayerManager().getObjectPool().get(name));
-        if (gp != null && gp.getShard() != null) {
-            if (gp.getShard() instanceof GameShard) {
-                GameShard game = (GameShard) gp.getShard();
-                if (game != null) {
-                    Set<GamePlayer> players = thisGamePlayers.get(game);
-                    if (players == null) {
-                        players = new HashSet();
-                        thisGamePlayers.put(game, players);
-                    }
-
-                    players.add(gp);
-                }
-            }
+        if(PlayerManager.cache.containsKey(name)) {
+            return PlayerManager.cache.get(name);
         }
-        return SkyWars.getInstance().getPlayerManager().getObjectPool().get(name);
+        GamePlayer gp = PlayerManager.cache.put(name, SkyWars.getInstance().getPlayerManager().getObjectPool().get(name));
+        return gp;
     }
 
     public static GamePlayer wrap(Player player) {
@@ -252,11 +235,10 @@ public class GamePlayer {
     }
 
     public void addLastDamager(Player p) {
-        this.lastDamagers.getUnchecked(p);
+        this.lastDamagers.put(p, System.currentTimeMillis());
     }
 
     public Player getKiller() {
-        if(this.lastDamagers == null || this.lastDamagers.asMap().isEmpty()) return null;
         return this.lastDamagers.asMap().keySet().stream()
                 .max((a, b) -> (this.lastDamagers.getUnchecked(a)).compareTo(this.lastDamagers.getUnchecked(b))).orElse(null);
     }
@@ -272,7 +254,7 @@ public class GamePlayer {
         this.coins += amount;
         Player p = this.getHandle();
         if (p != null) {
-            p.sendMessage(ChatUtil.colorize("&6+%d серебра", new Object[]{amount}));
+            p.sendMessage(ChatUtil.colorize("&6+%d серебра", amount));
         }
     }
 
@@ -285,11 +267,11 @@ public class GamePlayer {
         this.souls = Math.min(this.getSoulsLimit(), this.souls + ds);
         Player p = this.getHandle();
         if (p != null) {
-            p.sendMessage(ChatUtil.colorize("&6+%d серебра", new Object[]{dc}));
+            p.sendMessage(ChatUtil.colorize("&6+%d серебра", dc));
         }
 
         if (p != null) {
-            p.sendMessage(ChatUtil.colorize("&b+%d %s", new Object[]{ds, this.getSoulsName(ds)}));
+            p.sendMessage(ChatUtil.colorize("&b+%d %s", ds, this.getSoulsName(ds)));
         }
     }
 
@@ -299,18 +281,18 @@ public class GamePlayer {
         int dc = coins;
         this.coins += dc;
         if (p != null) {
-            p.sendMessage(ChatUtil.colorize("&6+%d серебра", new Object[]{dc}));
+            p.sendMessage(ChatUtil.colorize("&6+%d серебра", dc));
         }
     }
 
     public void changeCoins(int amount) {
         this.coins += amount;
         if (amount > 0 && this.getHandle() != null) {
-            this.getHandle().sendMessage(ChatUtil.colorize("&6+%d серебра", new Object[]{amount}));
+            this.getHandle().sendMessage(ChatUtil.colorize("&6+%d серебра", amount));
         }
 
         if (this.getShard() instanceof LobbyShard) {
-            //апдейт скорборда
+            VScoreboard.updateSilver(this);
         }
     }
 
@@ -332,13 +314,13 @@ public class GamePlayer {
         Player p = this.getHandle();
         if (p != null) {
             if (amount > 0) {
-                this.getHandle().sendMessage(ChatUtil.colorize("&b+%d %s", new Object[]{amount, this.getSoulsName(amount)}));
+                this.getHandle().sendMessage(ChatUtil.colorize("&b+%d %s", amount, this.getSoulsName(amount)));
             } else {
-                this.getHandle().sendMessage(ChatUtil.colorize("&b%d %s", new Object[]{amount, this.getSoulsName(-amount)}));
+                this.getHandle().sendMessage(ChatUtil.colorize("&b%d %s", amount, this.getSoulsName(-amount)));
             }
 
             if (this.getShard() instanceof LobbyShard) {
-                //апдейт скорборда
+                VScoreboard.updateSouls(this);
             }
         }
     }

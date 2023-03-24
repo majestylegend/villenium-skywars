@@ -6,10 +6,7 @@ import net.villenium.game.api.command.CommandManager;
 import net.villenium.skywars.commands.CommandForceStart;
 import net.villenium.skywars.commands.CommandLobby;
 import net.villenium.skywars.enums.GameType;
-import net.villenium.skywars.game.CageManager;
-import net.villenium.skywars.game.GameClassManager;
-import net.villenium.skywars.game.GameMap;
-import net.villenium.skywars.game.GamePerkManager;
+import net.villenium.skywars.game.*;
 import net.villenium.skywars.game.usables.ItemsManager;
 import net.villenium.skywars.handler.GameHandler;
 import net.villenium.skywars.handler.GlobalHandler;
@@ -53,6 +50,7 @@ public class SkyWars extends JavaPlugin {
         CageManager.init();
         GameClassManager.init();
         GamePerkManager.init();
+        KitSelector.init();
     }
 
     private void registerHandlers() {

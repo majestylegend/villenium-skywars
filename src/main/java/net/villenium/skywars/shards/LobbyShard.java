@@ -24,6 +24,12 @@ public class LobbyShard extends Shard {
 
     public void setupPlayer(Player player) {
         GamePlayer gp = GamePlayer.wrap(player);
+        gp.setKills(0);
+        gp.setAssists(0);
+        gp.setIncreasedDamage(0);
+        gp.setPlayed(false);
+        gp.setWraithInfometer(null);
+        gp.setDoomedUntil(0);
         gp.resetPlayer();
         gp.resetPlayerInventory();
         gp.getHandle().setGameMode(GameMode.SURVIVAL);

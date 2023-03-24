@@ -3,6 +3,7 @@ package net.villenium.skywars.game;
 import net.villenium.game.api.GameApi;
 import net.villenium.skywars.enums.GamePhase;
 import net.villenium.skywars.player.GamePlayer;
+import net.villenium.skywars.player.VScoreboard;
 import net.villenium.skywars.shards.GameShard;
 import net.villenium.skywars.utils.SCTeam;
 import org.bukkit.ChatColor;
@@ -57,6 +58,7 @@ public class GameTeam {
             this.friends.removePlayerSilently(this.players, new Player[]{p});
             if (this.players.isEmpty()) {
                 this.game.getTeams().getTeams().remove(this);
+
                 GameShard game = (GameShard) GamePlayer.wrap(p).getShard();
                 if (game == null) {
                     return;
@@ -69,7 +71,9 @@ public class GameTeam {
         } else {
             this.enemies.removePlayerSilently(this.players, new Player[]{p});
         }
-
+        this.players.forEach((player -> {
+            VScoreboard.updateTeamsLeft(GamePlayer.wrap(player));
+        }));
     }
 
     public boolean isInTeam(Player p) {

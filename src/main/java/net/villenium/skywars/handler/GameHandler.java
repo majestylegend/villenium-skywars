@@ -77,9 +77,10 @@ public class GameHandler implements Listener {
         }
 
         if (game != null) {
-            if (game.getGamePhase() == GamePhase.WAITING)
+            if (game.getGamePhase() == GamePhase.WAITING) {
                 game.toWaiting(p);
-            //ScoreboardUtil.setupGameWaitingScoreboard(p);
+            }
+
             if (game.getGamePhase() == GamePhase.RELOADING) {
                 Bukkit.shutdown();
             }
@@ -89,9 +90,7 @@ public class GameHandler implements Listener {
                 p.setGameMode(GameMode.SPECTATOR);
                 return;
             }
-
-            BarUtil.updatableTitle(game.getTimer().getBar(), "&eОжидание завершится через &a%s", game.getTimer().getTime(), game);
-            p.sendMessage(ChatUtil.prefixed("&6&lSkyWars", "&eОжидание завершится через &a%s", game.getTimer().getTime()));
+            p.sendMessage(ChatUtil.prefixed("&6&lSkyWars", "&eОжидание завершится через &a%s с", game.getTimer().getTime()));
         }
 
         p.setGameMode(GameMode.SURVIVAL);
@@ -135,6 +134,7 @@ public class GameHandler implements Listener {
                 if ((current == GamePhase.PREGAME || current == GamePhase.INGAME) && gp.getTeam() != null) {
                     LeaveManager.addLeave(p.getName());
                 }
+                game.getTimer().getBar().removePlayer(p);
 
                 if (gp.getTeam() != null) {
                     gp.getTeam().quit(p);
@@ -142,8 +142,6 @@ public class GameHandler implements Listener {
                         game.endTheGame();
                     }
                 }
-
-                //game.invalidatePlayer(p);
             }
         } catch (Throwable throwable) {
             throw throwable;
@@ -482,7 +480,7 @@ public class GameHandler implements Listener {
                             }
 
                             gp.getAssistants().stream().map(GamePlayer::wrap).forEach(GamePlayer::addAssist);
-                            //ScoreboardUtil.updateKills(lastDamager);
+                            VScoreboard.updateKills(GamePlayer.wrap(lastDamager));
                             int perkModifier = killer.getPerkModifier("Bulldozer");
                             lastDamager.addPotionEffect(new SimplePotionEffect(PotionEffectType.INCREASE_DAMAGE, 1, perkModifier));
                             perkModifier = killer.getPerkModifier("Juggernaut");

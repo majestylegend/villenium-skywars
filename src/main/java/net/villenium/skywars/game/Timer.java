@@ -33,6 +33,7 @@ public class Timer {
 
     public void init() {
         bar = GameApi.getBarManager().createDefaultBar("");
+        BarUtil.updatableTitle(bar, "&eОжидание завершится через &a%s", getTime(), game);
         Task.schedule(() -> {
             bar.addSpigotPlayers(this.game.getPlayers());
             GamePhase current = this.game.getGamePhase();
@@ -68,7 +69,7 @@ public class Timer {
                     int chestsRefillSeconds = insane ? 120 : 180;
                     if (this.time == 10) {
                         this.game.pb("&e&lВы более не бессмертны.");
-                        BarUtil.updatableTitle(bar, "&eЧерные драконы через &a%s", dragonsMinutes * 60 - this.time, game);
+                        BarUtil.updatableTitle(bar, "&eЧерные драконы через &a%s", (dragonsMinutes * 60 - this.time), game);
                     }
 
                     if (this.time % 60 == 0) {

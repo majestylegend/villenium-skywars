@@ -5,6 +5,7 @@ import net.villenium.game.api.user.User;
 import net.villenium.game.api.util.ChatUtil;
 import net.villenium.skywars.SkyWars;
 import net.villenium.skywars.player.GamePlayer;
+import net.villenium.skywars.player.PlayerManager;
 import net.villenium.skywars.shards.Shard;
 import net.villenium.skywars.utils.Task;
 import org.bukkit.entity.Player;
@@ -13,6 +14,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 public class GlobalHandler implements Listener {
@@ -20,7 +22,14 @@ public class GlobalHandler implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent e) {
         Shard.processQuitEvent(e.getPlayer());
-        GamePlayer.players.remove(e.getPlayer().getName());
+        PlayerManager.cache.remove(e.getPlayer().getName());
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(e.getPlayer().getName(), true);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onKick(PlayerKickEvent e) {
+        Shard.processQuitEvent(e.getPlayer());
+        PlayerManager.cache.remove(e.getPlayer().getName());
         SkyWars.getInstance().getPlayerManager().getObjectPool().save(e.getPlayer().getName(), true);
     }
 

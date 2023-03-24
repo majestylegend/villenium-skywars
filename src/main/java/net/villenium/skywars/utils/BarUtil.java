@@ -10,7 +10,7 @@ public class BarUtil {
         final int[] t = {seconds};
         Task var10001 = new Task(SkyWars.getInstance(), game.getId(), -1, 0, 1000) {
             public void onTick() {
-                if (t[0] >= 0) {
+                if (t[0] > 0) {
                     bar.setTitle(String.format(title, BarUtil.convertSeconds(--t[0])));
                 } else {
                     bar.setTitle("");

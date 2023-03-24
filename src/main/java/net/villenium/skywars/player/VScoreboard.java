@@ -16,7 +16,7 @@ public class VScoreboard {
             "&r",
             "&fУбийств: &a" + player.getSoloKills(),
             "&fПобед: &a" + player.getSoloWins(),
-            "&fДуши: &b" + player.getSouls() + "&7/&b???",
+            "&fДуши: &b" + player.getSouls() + "&7/&b" + player.getSoulsLimit(),
             "&fСеребро: &a" + player.getCoins(),
             "&r&r",
             "     &fvillenium.net"
@@ -24,8 +24,21 @@ public class VScoreboard {
     private static final Function<GamePlayer, List<String>> gameScoreboardLines = player -> Lists.newArrayList(
             "&r",
             "&f" + (((GameShard) player.getShard()).getPlayersPerTeam() == 1 ? "Игроков" : "Команд") + " осталось: &a" + ((GameShard) player.getShard()).getTeams().getTeamsLeft(),
-            "&fРежим: &a" + ((GameShard) player.getShard()).getGameType().getName(),
             "&r&r",
+            "&fУбийств: &a" + player.getKills(),
+            "&r&r&r",
+            "&fКарта: &a" + ((GameShard) player.getShard()).getMap().getName(),
+            "&fРежим: &a" + ((GameShard) player.getShard()).getGameType().getName(),
+            "&r&r&r&r",
+            "     &fvillenium.net"
+    );
+
+    private static final Function<GamePlayer, List<String>> gameWaitingScoreboardLines = player -> Lists.newArrayList(
+            "&r",
+            "&fНеобходимо игроков: &a" + (((GameShard) player.getShard()).getPlayersMaximumAllowed() * 3 >> 3),
+            "&r&r",
+            "&fКарта: &a" + ((GameShard) player.getShard()).getMap().getName(),
+            "&r&r&r",
             "     &fvillenium.net"
     );
 
@@ -39,6 +52,22 @@ public class VScoreboard {
         Player player = gamePlayer.getHandle();
         util.updateTitle(player, "&3&lSkyWars");
         util.send(player, gameScoreboardLines.apply(gamePlayer));
+    }
+
+    public static void setupGameWaitingScoreboard(GamePlayer gamePlayer) {
+        Player player = gamePlayer.getHandle();
+        util.updateTitle(player, "&3&lSkyWars");
+        util.send(player, gameWaitingScoreboardLines.apply(gamePlayer));
+    }
+
+    public static void updateKills(GamePlayer gamePlayer) {
+        Player player = gamePlayer.getHandle();
+        util.send(player, 6, "&fУбийств: &a" + gamePlayer.getKills());
+    }
+
+    public static void updateTeamsLeft(GamePlayer gamePlayer) {
+        Player player = gamePlayer.getHandle();
+        util.send(player, 8, "&f" + (((GameShard) gamePlayer.getShard()).getPlayersPerTeam() == 1 ? "Игроков" : "Команд") + " осталось: &a" + ((GameShard) gamePlayer.getShard()).getTeams().getTeamsLeft());
     }
 
     public static void updateSilver(GamePlayer gamePlayer) {

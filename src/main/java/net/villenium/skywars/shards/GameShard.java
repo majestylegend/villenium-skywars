@@ -30,6 +30,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Getter
 public class GameShard extends Shard {
@@ -41,6 +42,7 @@ public class GameShard extends Shard {
     private int playersPerTeam;
     private ChestGenerator chestGenerator;
     private int playersOnStart;
+    private List<GamePlayer> gamePlayers;
     private GameMap map;
     private Timer timer;
     private long gameStarted;
@@ -55,6 +57,7 @@ public class GameShard extends Shard {
         this.map = gameMap;
         this.playersPerTeam = playersPerTeam;
         this.playersOnStart = 0;
+        this.gamePlayers = new ArrayList<>();
         this.sorted = false;
         this.gameEnded = false;
         this.gameStarted = 0;
@@ -93,6 +96,8 @@ public class GameShard extends Shard {
         Location location = map.getWaitingLocation();
         location.setWorld(getWorld());
         p.teleport(location);
+        VScoreboard.setupGameWaitingScoreboard(GamePlayer.wrap(p));
+        KitSelector.onJoin(p);
     }
 
     public void spawnDragons() {
@@ -134,11 +139,11 @@ public class GameShard extends Shard {
             if (this.getTeams().getTeams().isEmpty()) {
                 this.switchPhase(GamePhase.RELOADING);
             } else {
-                GameTeam winner = (GameTeam) this.getTeams().getTeams().iterator().next();
+                GameTeam winner = this.getTeams().getTeams().iterator().next();
                 PriorityQueue<GamePlayer> killers = new PriorityQueue((gp1, gp2) -> {
                     return ((GamePlayer) gp2).getKills() - ((GamePlayer) gp1).getKills();
                 });
-                killers.addAll(GamePlayer.thisGamePlayers.get(this));
+                killers.addAll(this.gamePlayers);
                 this.b("&a&l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
                 this.b(getNiceString("&lSkyWars"));
                 this.b("");
@@ -179,6 +184,7 @@ public class GameShard extends Shard {
                     gp.setSoloWins(gp.getSoloWins() + 50);
                 }
 
+
                 this.switchPhase(GamePhase.ENDING);
             }
         }
@@ -187,7 +193,7 @@ public class GameShard extends Shard {
     public void gg(Player p) {
         if (this.gamePhase == GamePhase.ENDING && !this.ggs.contains(p)) {
             this.ggs.add(p);
-            GamePlayer.wrap(p).setCoins(GamePlayer.wrap(p).getCoins() + 10);
+            GamePlayer.wrap(p).changeCoins(10);
         }
 
     }
@@ -215,6 +221,7 @@ public class GameShard extends Shard {
                     break;
                 case INGAME:
                     this.playersOnStart = this.getPlayers().size();
+                    this.gamePlayers = this.getPlayers().stream().map(GamePlayer::wrap).collect(Collectors.toList());
                     Set<Location> toRemoveCage = new HashSet();
                     ItemStack compass = new SimpleItemStack(Material.COMPASS, "&6&lСканирую..");
                     Iterator var6 = this.getPlayers().iterator();
@@ -273,6 +280,7 @@ public class GameShard extends Shard {
                     break;
                 case RELOADING:
                     this.getPlayers().forEach((px) -> {
+                        this.getTimer().getBar().removePlayer(px);
                         GamePlayer.wrap(px).moveToShard(Shard.getRandomLobby());
                     });
                     this.timer.setTime(0);

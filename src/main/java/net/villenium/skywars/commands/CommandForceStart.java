@@ -26,12 +26,14 @@ public class CommandForceStart implements CommandAccess {
 
     @CommandHandler
     public void handle(CommandSender sender, String[] args) {
-        if (GamePlayer.wrap(sender.getName()).getShard() instanceof GameShard) {
+        if (!(GamePlayer.wrap(sender.getName()).getShard() instanceof GameShard)) {
             sender.sendMessage(ChatUtil.prefixed("&6&lSkyWars", "&cДействие возможно только на игровом сервере!"));
         } else {
             GameShard game = (GameShard) GamePlayer.wrap(sender.getName()).getShard();
             if (game == null) {
                 sender.sendMessage(ChatUtil.prefixed("&6&lSkyWars", "&cВы не находитесь ни на одном из игровых шардов!"));
+            } else if (game.getGamePhase() != GamePhase.WAITING) {
+                sender.sendMessage(ChatUtil.prefixed("&6&lSkyWars", "&cИгра на вашем шарде уже запущена!"));
             } else {
                 sender.sendMessage(ChatUtil.prefixed("&6&lSkyWars", "&aЗапускаю игру на вашем шарде (&b%s&a)!", new Object[]{game.getId()}));
                 game.switchPhase(GamePhase.PREGAME);
