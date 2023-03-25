@@ -87,11 +87,10 @@ public class GamePlayer {
     }
 
     public static GamePlayer wrap(String name) {
-        if(PlayerManager.cache.containsKey(name)) {
-            return PlayerManager.cache.get(name);
+        if (!PlayerManager.cache.containsKey(name)) {
+            PlayerManager.cache.put(name, SkyWars.getInstance().getPlayerManager().getObjectPool().get(name));
         }
-        GamePlayer gp = PlayerManager.cache.put(name, SkyWars.getInstance().getPlayerManager().getObjectPool().get(name));
-        return gp;
+        return PlayerManager.cache.get(name);
     }
 
     public static GamePlayer wrap(Player player) {
