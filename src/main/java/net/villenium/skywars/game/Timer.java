@@ -3,12 +3,9 @@ package net.villenium.skywars.game;
 import lombok.Getter;
 import net.villenium.game.api.GameApi;
 import net.villenium.game.api.Title;
-import net.villenium.game.api.bar.Bar;
 import net.villenium.game.api.bar.BossBar;
 import net.villenium.game.api.util.ChatUtil;
 import net.villenium.skywars.enums.GamePhase;
-import net.villenium.skywars.player.GamePlayer;
-import net.villenium.skywars.player.VScoreboard;
 import net.villenium.skywars.shards.GameShard;
 import net.villenium.skywars.utils.BarUtil;
 import net.villenium.skywars.utils.Task;
@@ -17,10 +14,9 @@ import java.beans.ConstructorProperties;
 
 public class Timer {
     private final GameShard game;
-    private int time = 60;
-
     @Getter
     public BossBar bar;
+    private int time = 60;
 
     @ConstructorProperties({"game"})
     public Timer(GameShard game) {
@@ -33,7 +29,7 @@ public class Timer {
 
     public void init() {
         bar = GameApi.getBarManager().createDefaultBar("");
-        BarUtil.updatableTitle(bar, "&eОжидание завершится через &a%s", getTime(), game);
+        BarUtil.updatableBar(bar, "&eОжидание завершится через &a%s", getTime(), game);
         Task.schedule(() -> {
             bar.addSpigotPlayers(this.game.getPlayers());
             GamePhase current = this.game.getGamePhase();
@@ -49,6 +45,7 @@ public class Timer {
                             this.game.switchPhase(GamePhase.PREGAME);
                         } else {
                             this.time = 60;
+                            BarUtil.updatableBar(bar, "&eОжидание завершится через &a%s", getTime(), game);
                             this.game.pb("&cНедостаточно игроков для начала игры!");
                         }
                     } else if (this.game.getPlayers().size() >= this.game.getPlayersMaximumAllowed()) {
@@ -58,7 +55,7 @@ public class Timer {
                 case PREGAME:
                     if (--this.time == 0) {
                         this.game.switchPhase(GamePhase.INGAME);
-                        BarUtil.updatableTitle(bar, "&eБессмертие исчезнет через &a%s", 10, game);
+                        BarUtil.updatableBar(bar, "&eБессмертие исчезнет через &a%s", 10, game);
                     }
                     break;
                 case INGAME:
@@ -69,13 +66,13 @@ public class Timer {
                     int chestsRefillSeconds = insane ? 120 : 180;
                     if (this.time == 10) {
                         this.game.pb("&e&lВы более не бессмертны.");
-                        BarUtil.updatableTitle(bar, "&eЧерные драконы через &a%s", (dragonsMinutes * 60 - this.time), game);
+                        BarUtil.updatableBar(bar, "&eДэзматч начнется через &a%s", (dragonsMinutes * 60 - this.time), game);
                     }
 
                     if (this.time % 60 == 0) {
                         if (this.time == dragonsMinutes * 60) {
-                            this.game.spawnDragons();
-                            BarUtil.updatableTitle(bar, "&eЗавершение игры через &a%s", end * 60 - this.time, game);
+                            this.game.startDeathmatch();
+                            BarUtil.updatableBar(bar, "&eЗавершение игры через &a%s", end * 60 - this.time, game);
                         } else if (this.time == end * 60) {
                             this.game.forcefullyEndTheGame(false);
                         }

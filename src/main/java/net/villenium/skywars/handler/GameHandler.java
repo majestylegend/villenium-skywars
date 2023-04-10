@@ -9,20 +9,15 @@ import net.villenium.skywars.enums.GamePhase;
 import net.villenium.skywars.game.ChestsManager;
 import net.villenium.skywars.game.GameClass;
 import net.villenium.skywars.game.GameTeam;
-import net.villenium.skywars.game.LeaveManager;
 import net.villenium.skywars.player.GamePlayer;
 import net.villenium.skywars.player.VScoreboard;
 import net.villenium.skywars.shards.GameShard;
 import net.villenium.skywars.shards.Shard;
 import net.villenium.skywars.utils.AlgoUtil;
-import net.villenium.skywars.utils.BarUtil;
 import net.villenium.skywars.utils.Task;
 import net.villenium.skywars.utils.simple.SimpleItemStack;
 import net.villenium.skywars.utils.simple.SimplePotionEffect;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
@@ -35,28 +30,34 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.EnchantingInventory;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.Dye;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue;
 import org.bukkit.potion.PotionEffectType;
 
 import java.lang.ref.WeakReference;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
 public class GameHandler implements Listener {
     private static final ItemStack arrow;
+    private static final ItemStack lapis;
 
     static {
         arrow = new ItemStack(Material.ARROW, 1);
+        Dye dye = new Dye();
+        dye.setColor(DyeColor.BLUE);
+        lapis = dye.toItemStack(64);
     }
 
     private static void kick(Player p, String cause) {
@@ -82,7 +83,8 @@ public class GameHandler implements Listener {
             }
 
             if (game.getGamePhase() == GamePhase.RELOADING) {
-                Bukkit.shutdown();
+                kick(p, "&cИгра уже закончилась!");
+                return;
             }
 
             if (game.getGamePhase() != GamePhase.WAITING) {
@@ -94,6 +96,28 @@ public class GameHandler implements Listener {
         }
 
         p.setGameMode(GameMode.SURVIVAL);
+    }
+
+    public static void onQuit(Player p) {
+        if (!(GamePlayer.wrap(p).getShard() instanceof GameShard)) return;
+        GamePlayer gp = GamePlayer.wrap(p);
+
+        try {
+            GameShard game = (GameShard) GamePlayer.wrap(p).getShard();
+            if (game != null) {
+                game.getTimer().getBar().removePlayer(p);
+
+                if (gp.getTeam() != null) {
+                    gp.getTeam().quit(p);
+                    if (game.getTeams().getTeamsLeft() <= 1) {
+                        game.endTheGame();
+                    }
+                }
+                gp.resetGamePlayer();
+            }
+        } catch (Throwable throwable) {
+            throw throwable;
+        }
     }
 
     @EventHandler
@@ -121,31 +145,6 @@ public class GameHandler implements Listener {
     )
     public void onQuit(PlayerQuitEvent e) {
         onQuit(e.getPlayer());
-    }
-
-    public static void onQuit(Player p) {
-        if (!(GamePlayer.wrap(p).getShard() instanceof GameShard)) return;
-        GamePlayer gp = GamePlayer.wrap(p);
-
-        try {
-            GameShard game = (GameShard) GamePlayer.wrap(p).getShard();
-            if (game != null) {
-                GamePhase current = game.getGamePhase();
-                if ((current == GamePhase.PREGAME || current == GamePhase.INGAME) && gp.getTeam() != null) {
-                    LeaveManager.addLeave(p.getName());
-                }
-                game.getTimer().getBar().removePlayer(p);
-
-                if (gp.getTeam() != null) {
-                    gp.getTeam().quit(p);
-                    if (game.getTeams().getTeamsLeft() <= 1) {
-                        game.endTheGame();
-                    }
-                }
-            }
-        } catch (Throwable throwable) {
-            throw throwable;
-        }
     }
 
     @EventHandler
@@ -250,22 +249,22 @@ public class GameHandler implements Listener {
                     eq.setChestplateDropChance(0.0F);
                     eq.setLeggingsDropChance(0.0F);
                     eq.setBootsDropChance(0.0F);
-                    eq.setItemInHandDropChance(0.0F);
+                    eq.setItemInMainHandDropChance(0.0F);
                     if (is.getItemMeta().getDisplayName().contains("палача")) {
                         skeleton.setSkeletonType(SkeletonType.WITHER);
-                        eq.setItemInHand(new ItemStack(Material.DIAMOND_SWORD, 1));
+                        eq.setItemInMainHand(new ItemStack(Material.DIAMOND_SWORD, 1));
                     } else {
                         skeleton.setSkeletonType(SkeletonType.NORMAL);
-                        eq.setItemInHand(new SimpleItemStack(Material.BOW, "Лук скелета", Enchantment.ARROW_DAMAGE, 1));
+                        eq.setItemInMainHand(new SimpleItemStack(Material.BOW, "Лук скелета", Enchantment.ARROW_DAMAGE, 1));
                     }
 
                     amount = is.getAmount();
                     if (amount == 1) {
-                        p.setItemInHand(null);
+                        p.getInventory().setItemInMainHand(null);
                     } else {
                         --amount;
                         is.setAmount(amount);
-                        p.setItemInHand(is);
+                        p.getInventory().setItemInMainHand(is);
                     }
                 } else if (is.getType() == Material.MONSTER_EGG && is.getDurability() == 54) {
                     e.setCancelled(true);
@@ -283,7 +282,7 @@ public class GameHandler implements Listener {
                     eq.setChestplateDropChance(0.0F);
                     eq.setLeggingsDropChance(0.0F);
                     eq.setBootsDropChance(0.0F);
-                    eq.setItemInHandDropChance(0.0F);
+                    eq.setItemInMainHandDropChance(0.0F);
                     if (is.getItemMeta().getDisplayName().contains("зловещего")) {
                         zombie.setHealth(20.0D);
                         zombie.setMaxHealth(20.0D);
@@ -291,20 +290,20 @@ public class GameHandler implements Listener {
                         eq.setChestplate(new ItemStack(Material.IRON_CHESTPLATE, 1));
                         eq.setLeggings(new ItemStack(Material.IRON_LEGGINGS, 1));
                         eq.setBoots(new ItemStack(Material.IRON_BOOTS, 1));
-                        eq.setItemInHand(new ItemStack(Material.DIAMOND_SWORD, 1));
+                        eq.setItemInMainHand(new ItemStack(Material.DIAMOND_SWORD, 1));
                     } else {
                         zombie.setHealth(10.0D);
                         zombie.setMaxHealth(10.0D);
-                        eq.setItemInHand(new ItemStack(Material.IRON_SWORD, 1));
+                        eq.setItemInMainHand(new ItemStack(Material.IRON_SWORD, 1));
                     }
 
                     amount = is.getAmount();
                     if (amount == 1) {
-                        p.setItemInHand(null);
+                        p.getInventory().setItemInMainHand(null);
                     } else {
                         --amount;
                         is.setAmount(amount);
-                        p.setItemInHand(is);
+                        p.getInventory().setItemInMainHand(is);
                     }
                 }
             }
@@ -405,6 +404,7 @@ public class GameHandler implements Listener {
                 useIncreasedDamage = true;
             } else if (e.getDamager() instanceof Projectile) {
                 Projectile pj = (Projectile) e.getDamager();
+
                 if (pj.getShooter() instanceof Player) {
                     damager = (Player) pj.getShooter();
                 }
@@ -437,12 +437,44 @@ public class GameHandler implements Listener {
                 if (ranged) {
                     double left = p.getHealth() - e.getFinalDamage();
                     if (left > 0.5D) {
-                        damager.sendMessage(ChatUtil.prefixed("&6&lSkyWars", "ARROW_HIT_INFO", GameApi.getUserManager().get(p).getFullDisplayName(), left / 2.0D));
+                        damager.sendMessage(ChatUtil.prefixed("&6&lSkyWars", "&aВы попали в %s&a! У него осталось &c%.1f &aсердец здоровья.", GameApi.getUserManager().get(p).getFullDisplayName(), left / 2.0D));
                     }
                 }
             }
         }
+    }
 
+    @EventHandler
+    public void onPlace(BlockPlaceEvent event) {
+        if (event.getBlock().getType() == Material.TNT) {
+            event.getBlock().setType(Material.AIR);
+            Entity tnt = event.getPlayer().getWorld().spawn(event.getBlock().getLocation().add(0.5D, 0.25D, 0.5D), TNTPrimed.class);
+            ((TNTPrimed) tnt).setFuseTicks(30);
+        }
+
+    }
+
+    @EventHandler
+    public void onInventoryOpen(InventoryOpenEvent e) {
+        if (e.getInventory() instanceof EnchantingInventory) {
+            e.getInventory().setItem(1, lapis);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent e) {
+        if (e.getInventory() instanceof EnchantingInventory) {
+            e.getInventory().setItem(1, null);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryInteract(InventoryClickEvent e) {
+        if (e.getInventory() instanceof EnchantingInventory) {
+            if (e.getCurrentItem() != null && e.getCurrentItem().getType() == Material.INK_SACK) {
+                e.setCancelled(true);
+            }
+        }
     }
 
     @EventHandler
@@ -459,7 +491,7 @@ public class GameHandler implements Listener {
                 if (game != null) {
                     GamePlayer gp = GamePlayer.wrap(p);
                     if (gp.getTeam() != null) {
-                        p.teleport(gp.getTeam().getSpawn());
+                        p.teleport(gp.getTeam().getSpawns().get(new Random().nextInt(gp.getTeam().getSpawns().size())));
                         Player lastDamager = gp.getKiller();
                         if (lastDamager != null && lastDamager.isOnline()) {
                             GamePlayer killer = GamePlayer.wrap(lastDamager);
@@ -558,11 +590,16 @@ public class GameHandler implements Listener {
                         teams.forEach((team) -> {
                             team.remove(p);
                         });
+                        game.getPlayers().forEach((player -> {
+                            if(player != null)
+                                VScoreboard.updateTeamsLeft(GamePlayer.wrap(player));
+                        }));
                         if (game.getTeams().getTeamsLeft() <= 1) {
                             game.endTheGame();
                         }
 
                         p.sendMessage(ChatUtil.prefixed("&6&lSkyWars", "&7Останьтесь до завершения игры, чтобы получить опыт и немного серебра (за написание gg)."));
+                        ChatUtil.sendClickableMessage(p, "&a&lНачать новую игру?", Arrays.asList("&f*сюда можно нажать*"), "/replay " + game.getGameType().toString());
                     }
                 }
             }
@@ -606,5 +643,14 @@ public class GameHandler implements Listener {
             }
 
         }
+    }
+
+    @EventHandler
+    public void onMove(PlayerMoveEvent e) {
+        if (!(GamePlayer.wrap(e.getPlayer()).getShard() instanceof GameShard)) return;
+        if (e.getTo().getY() <= 1) {
+            e.getPlayer().damage(100);
+        }
+        if (((GameShard) GamePlayer.wrap(e.getPlayer()).getShard()).isDeathmatchLock()) e.setCancelled(true);
     }
 }

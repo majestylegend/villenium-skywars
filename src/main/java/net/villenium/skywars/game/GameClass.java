@@ -44,6 +44,23 @@ public class GameClass {
         }
     }
 
+    private static String translateEnchant(String name) {
+        name = name.replace("Protection Environmental", "Защита");
+        name = name.replace("Protection Projectile", "Защита от снарядов");
+        name = name.replace("Knockback", "Отдача");
+        name = name.replace("Fire Aspect", "Заговор огня");
+        name = name.replace("Damage All", "Острота");
+        name = name.replace("Protection Explosions", "Взрывоустойчивость");
+        name = name.replace("Arrow Infinite", "Бесконечность");
+        name = name.replace("Arrow Damage", "Сила");
+        name = name.replace("Arrow Fire", "Горящая стрела");
+        name = name.replace("Durability", "Прочность");
+        name = name.replace("Arrow Knockback", "Отбрасывание");
+        name = name.replace("Dig Speed", "Эффективность");
+        name = name.replace("Protection Fire", "Огнеупорность");
+        return name;
+    }
+
     private static String getEnchantName(String name) {
         name = name.replace("_", " ");
         String[] args = name.split(" ");
@@ -87,12 +104,12 @@ public class GameClass {
     }
 
     public ItemStack getIcon(GameType type, int level) {
-        return ((GameClass.ClassInfo[]) this.info.get(type))[level - 1].icon;
+        return ((GameClass.ClassInfo[]) this.info.get(type))[level - 1].getIcon();
     }
 
     public void setup(Player p, int level) {
         if (!(GamePlayer.wrap(p).getShard() instanceof GameShard)) return;
-        GameClass.ClassInfo[] infos = (GameClass.ClassInfo[]) this.info.get(((GameShard) GamePlayer.wrap(p).getShard()).getGameType());
+        GameClass.ClassInfo[] infos = this.info.get(((GameShard) GamePlayer.wrap(p).getShard()).getGameType());
         if (infos != null) {
             GameClass.ClassInfo info = infos[level - 1];
             if (info != null) {
@@ -103,9 +120,9 @@ public class GameClass {
     }
 
     public int getLevels() {
-        GameClass.ClassInfo[] info = (GameClass.ClassInfo[]) this.info.get(GameType.SOLO_CLASSIC);
+        GameClass.ClassInfo[] info = this.info.get(GameType.SOLO_CLASSIC);
         if (info == null) {
-            throw new IllegalStateException("Can not get levels for GameClass " + this.name + "(" + this.info.toString() + ")");
+            throw new IllegalStateException("Can not get levels for GameClass " + this.name + "(" + this.info + ")");
         } else {
             return info.length;
         }
@@ -146,7 +163,7 @@ public class GameClass {
 
                     while (var10.hasNext()) {
                         enchant = (Enchantment) var10.next();
-                        sb.append(GameClass.getEnchantName(enchant.getName())).append(meta.getStoredEnchants().get(enchant)).append(", ");
+                        sb.append(translateEnchant(GameClass.getEnchantName(enchant.getName()))).append(meta.getStoredEnchants().get(enchant)).append(", ");
                     }
 
                     result = sb.toString();
@@ -161,7 +178,7 @@ public class GameClass {
 
                     while (var10.hasNext()) {
                         enchant = (Enchantment) var10.next();
-                        sb.append(GameClass.getEnchantName(enchant.getName())).append(im.getEnchants().get(enchant)).append(", ");
+                        sb.append(translateEnchant(GameClass.getEnchantName(translateEnchant(enchant.getName())))).append(im.getEnchants().get(enchant)).append(", ");
                     }
 
                     result = sb.toString();

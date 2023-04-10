@@ -3,8 +3,6 @@ package net.villenium.skywars.player;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import javafx.util.Pair;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import net.villenium.game.api.GameApi;
@@ -21,12 +19,14 @@ import net.villenium.skywars.shards.GameShard;
 import net.villenium.skywars.shards.LobbyShard;
 import net.villenium.skywars.shards.Shard;
 import net.villenium.skywars.utils.AlgoUtil;
+import net.villenium.skywars.utils.structures.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -34,17 +34,20 @@ public class GamePlayer {
 
     @Id
     private final String name;
+    Map<String, Integer> classes;
+    List<String> cages;
+    String selectedCage;
+    @IgnoreField
+    GameClass selectedClass;
     @IgnoreField
     private LoadingCache<Player, Long> lastDamagers;
-    Map<GameClass, Integer> classes;
-    GameClass selectedClass;
-    List<Cage> cages;
-    Cage selectedCage;
     private int soloKills;
     private int soloWins;
     private int coins;
     private int souls;
-    private Map<GamePerk, Integer> perks;
+    private Map<String, Integer> perks;
+
+    private boolean parkourAwarded;
     @IgnoreField
     private long doomedUntil;
     @IgnoreField
@@ -60,18 +63,10 @@ public class GamePlayer {
     @IgnoreField
     private double increasedDamage;
     @IgnoreField
-    private long leave;
-    @IgnoreField
     private int assists;
 
-    public GamePlayer(String name, Map<GameClass, Integer> classes, GameClass selectedClass, List<Cage> cages, Cage selectedCage, int soloKills, int soloWins, int coins, int souls, Map<GamePerk, Integer> perks) {
-        this.lastDamagers = CacheBuilder.newBuilder().expireAfterWrite(15L, TimeUnit.SECONDS).weakKeys().build(new CacheLoader<Player, Long>() {
-            public Long load(Player k) {
-                return System.currentTimeMillis();
-            }
-        });
+    public GamePlayer(String name, Map<String, Integer> classes, List<String> cages, String selectedCage, int soloKills, int soloWins, int coins, int souls, Map<String, Integer> perks, boolean parkourAwarded) {
         this.classes = classes;
-        this.selectedClass = selectedClass;
         this.cages = cages;
         this.selectedCage = selectedCage;
         this.perks = perks;
@@ -84,13 +79,24 @@ public class GamePlayer {
         this.soloWins = soloWins;
         this.coins = coins;
         this.souls = souls;
+        this.parkourAwarded = parkourAwarded;
     }
 
     public static GamePlayer wrap(String name) {
-        if (!PlayerManager.cache.containsKey(name)) {
-            PlayerManager.cache.put(name, SkyWars.getInstance().getPlayerManager().getObjectPool().get(name));
+        GamePlayer gamePlayer = SkyWars.getInstance().getPlayerManager().getObjectPool().get(name);
+        if (gamePlayer.getLastDamagers() == null)
+            gamePlayer.setLastDamagers(CacheBuilder.newBuilder().expireAfterWrite(15L, TimeUnit.SECONDS).weakKeys().build(new CacheLoader<Player, Long>() {
+                public Long load(Player k) {
+                    return System.currentTimeMillis();
+                }
+            }));
+        if (gamePlayer.getPerks() == null) {
+            gamePlayer.setPerks(new HashMap<>());
         }
-        return PlayerManager.cache.get(name);
+        if (gamePlayer.getClasses() == null) {
+            gamePlayer.setClasses(new HashMap<>());
+        }
+        return gamePlayer;
     }
 
     public static GamePlayer wrap(Player player) {
@@ -113,9 +119,7 @@ public class GamePlayer {
         Shard game = this.getShard();
         if (game != null) {
             Collection<Player> thatShard = game.getPlayers();
-            Bukkit.getOnlinePlayers().stream().filter((p2) -> {
-                return !thatShard.contains(p2);
-            }).forEach((p2) -> {
+            Bukkit.getOnlinePlayers().stream().filter((p2) -> !thatShard.contains(p2)).forEach((p2) -> {
                 p2.hidePlayer(this.getHandle());
                 this.getHandle().hidePlayer(p2);
             });
@@ -129,6 +133,21 @@ public class GamePlayer {
         } else {
             ((LobbyShard) shard).setupPlayer(this.getHandle());
         }
+    }
+
+    public void resetGamePlayer() {
+        this.kills = 0;
+        this.assists = 0;
+        this.team = null;
+        this.played = false;
+        this.doomedUntil = 0L;
+        this.increasedDamage = 0;
+        this.setLastDamagers(CacheBuilder.newBuilder().expireAfterWrite(15L, TimeUnit.SECONDS).weakKeys().build(new CacheLoader<Player, Long>() {
+            public Long load(Player k) {
+                return System.currentTimeMillis();
+            }
+        }));
+        this.wraithInfometer = null;
     }
 
     public void resetPlayer() {
@@ -152,36 +171,37 @@ public class GamePlayer {
     }
 
     public void addCage(Cage cage) {
-        this.cages.add(cage);
+        this.cages.add(cage.getName());
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(this.getName(), false);
     }
 
     public Pair<GameClass, Integer> addRandomClassForGamePurposes() {
-        GameClass cls = (GameClass) GameClassManager.getClasses().get(AlgoUtil.r(GameClassManager.getClasses().size()));
-        int level = 1 + AlgoUtil.r(cls.getLevels());
-        int perkModifier = this.getPerkModifier("CoolRandom");
-        if (level < perkModifier) {
-            level = Math.min(perkModifier, cls.getLevels());
+        GameClass cls;
+        if (this.getClasses().size() == 0) {
+            cls = GameClassManager.getGameClass("Builder");
+        } else {
+            cls = GameClassManager.getGameClass(this.getClasses().keySet().stream().collect(Collectors.toList()).get(AlgoUtil.r(this.getClasses().size())));
         }
 
-        this.classes.put(cls, level);
         this.selectedClass = cls;
-        return new Pair(cls, level);
+        return new Pair(cls, this.getClassLevel(cls));
     }
 
     public void addClass(GameClass gc, int level) {
-        this.classes.put(gc, level);
+        this.classes.put(gc.getName(), level);
     }
 
     public void addPerk(GamePerk perk, int level) {
-        this.perks.put(perk, level);
+        this.perks.put(perk.getName(), level);
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(this.getName(), false);
     }
 
     public boolean hasPerk(GamePerk gp) {
-        return this.perks.containsKey(gp);
+        return this.perks.containsKey(gp.getName());
     }
 
     public boolean hasPerk(GamePerk gp, int level) {
-        Integer lvl = (Integer) this.perks.get(gp);
+        Integer lvl = this.perks.get(gp.getName());
         return lvl != null && lvl >= level;
     }
 
@@ -193,7 +213,7 @@ public class GamePlayer {
         if (gp == null) {
             return 0;
         } else {
-            Integer lvl = (Integer) this.perks.get(gp);
+            Integer lvl = this.perks.get(gp.getName());
             return lvl == null ? 0 : lvl;
         }
     }
@@ -208,29 +228,31 @@ public class GamePlayer {
     }
 
     public boolean hasClass(GameClass gc) {
-        return this.classes.containsKey(gc);
+        return this.classes.containsKey(gc.getName());
     }
 
     public boolean hasClass(GameClass gc, int level) {
-        Integer lvl = (Integer) this.classes.get(gc);
+        Integer lvl = this.classes.get(gc.getName());
         return lvl != null && lvl >= level;
     }
 
     public int getClassLevel(GameClass gc) {
-        Integer lvl = (Integer) this.classes.get(gc);
+        Integer lvl = this.classes.get(gc.getName());
         return lvl == null ? (gc.getName().equals("Builder") ? 1 : 0) : lvl;
     }
 
     public void selectClass(GameClass gc) {
         this.selectedClass = gc;
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(this.getName(), false);
     }
 
     public boolean hasCage(Cage cage) {
-        return this.cages.contains(cage);
+        return this.cages.contains(cage.getName());
     }
 
     public void selectCage(Cage cage) {
-        this.selectedCage = cage;
+        this.selectedCage = cage.getName();
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(this.getName(), false);
     }
 
     public void addLastDamager(Player p) {
@@ -255,6 +277,7 @@ public class GamePlayer {
         if (p != null) {
             p.sendMessage(ChatUtil.colorize("&6+%d серебра", amount));
         }
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(this.getName(), false);
     }
 
     public void addSoloKill(int coins) {
@@ -272,6 +295,7 @@ public class GamePlayer {
         if (p != null) {
             p.sendMessage(ChatUtil.colorize("&b+%d %s", ds, this.getSoulsName(ds)));
         }
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(this.getName(), false);
     }
 
     public void addSoloWin(int coins) {
@@ -282,6 +306,7 @@ public class GamePlayer {
         if (p != null) {
             p.sendMessage(ChatUtil.colorize("&6+%d серебра", dc));
         }
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(this.getName(), false);
     }
 
     public void changeCoins(int amount) {
@@ -293,6 +318,7 @@ public class GamePlayer {
         if (this.getShard() instanceof LobbyShard) {
             VScoreboard.updateSilver(this);
         }
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(this.getName(), false);
     }
 
     public int getSoulsLimit() {
@@ -322,6 +348,7 @@ public class GamePlayer {
                 VScoreboard.updateSouls(this);
             }
         }
+        SkyWars.getInstance().getPlayerManager().getObjectPool().save(this.getName(), false);
     }
 
     private String getSoulsName(int amount) {

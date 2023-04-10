@@ -3,7 +3,9 @@ package net.villenium.skywars.player;
 import com.google.common.collect.Lists;
 import net.villenium.game.api.GameApi;
 import net.villenium.game.api.ScoreBoardUtil;
+import net.villenium.skywars.enums.GamePhase;
 import net.villenium.skywars.shards.GameShard;
+import net.villenium.skywars.shards.LobbyShard;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -27,7 +29,7 @@ public class VScoreboard {
             "&r&r",
             "&fУбийств: &a" + player.getKills(),
             "&r&r&r",
-            "&fКарта: &a" + ((GameShard) player.getShard()).getMap().getName(),
+            "&fКарта: &a" + ((GameShard) player.getShard()).getMap().getVisibleName(),
             "&fРежим: &a" + ((GameShard) player.getShard()).getGameType().getName(),
             "&r&r&r&r",
             "     &fvillenium.net"
@@ -37,7 +39,7 @@ public class VScoreboard {
             "&r",
             "&fНеобходимо игроков: &a" + (((GameShard) player.getShard()).getPlayersMaximumAllowed() * 3 >> 3),
             "&r&r",
-            "&fКарта: &a" + ((GameShard) player.getShard()).getMap().getName(),
+            "&fКарта: &a" + ((GameShard) player.getShard()).getMap().getVisibleName(),
             "&r&r&r",
             "     &fvillenium.net"
     );
@@ -55,6 +57,9 @@ public class VScoreboard {
     }
 
     public static void setupGameWaitingScoreboard(GamePlayer gamePlayer) {
+        if(gamePlayer.getShard() instanceof LobbyShard || ((GameShard)gamePlayer.getShard()).getGamePhase() != GamePhase.WAITING) {
+            return;
+        }
         Player player = gamePlayer.getHandle();
         util.updateTitle(player, "&3&lSkyWars");
         util.send(player, gameWaitingScoreboardLines.apply(gamePlayer));
@@ -77,7 +82,7 @@ public class VScoreboard {
 
     public static void updateSouls(GamePlayer gamePlayer) {
         Player player = gamePlayer.getHandle();
-        util.send(player, 4, "&fДуши: &b" + gamePlayer.getSouls() + "&7/&b???");
+        util.send(player, 4, "&fДуши: &b" + gamePlayer.getSouls() + "&7/&b" + gamePlayer.getSoulsLimit());
     }
 
 }

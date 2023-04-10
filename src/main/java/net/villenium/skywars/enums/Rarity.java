@@ -11,7 +11,7 @@ public enum Rarity {
     private final String visibleName;
     private final int copies;
 
-    private Rarity(final String visibleName, final int copies) {
+    Rarity(final String visibleName, final int copies) {
         this.visibleName = ChatUtil.colorize(visibleName);
         this.copies = copies;
     }

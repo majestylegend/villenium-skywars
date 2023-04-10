@@ -1,12 +1,18 @@
 package net.villenium.skywars.handler;
 
+import net.villenium.game.api.GameApi;
 import net.villenium.game.api.item.GameItemStack;
+import net.villenium.skywars.SkyWars;
 import net.villenium.skywars.menu.LobbySelectorHandler;
 import net.villenium.skywars.menu.MenuItemHandler;
 import net.villenium.skywars.player.GamePlayer;
 import net.villenium.skywars.player.VScoreboard;
+import net.villenium.skywars.shards.LobbyShard;
 import net.villenium.skywars.shards.Shard;
+import net.villenium.skywars.utils.BlockUtil;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -36,39 +42,59 @@ public class LobbyHandler implements Listener {
 
     @EventHandler
     public void onMove(PlayerMoveEvent e) {
-        if (!e.getPlayer().getWorld().getName().contains("lobby")) return;
+        if (Shard.getShard(e.getPlayer().getWorld().getName()) == null || !(Shard.getShard(e.getPlayer().getWorld().getName()) instanceof LobbyShard))
+            return;
         if (e.getTo().getY() <= 1) {
-            e.getPlayer().teleport(e.getPlayer().getWorld().getSpawnLocation());
+            Location lobby = BlockUtil.strToLoc(SkyWars.getInstance().getConfig().getString("lobbyLocation"));
+            lobby.setWorld(e.getPlayer().getWorld());
+            e.getPlayer().teleport(lobby);
         }
     }
 
     @EventHandler
     public void onDamage(EntityDamageEvent e) {
-        if (!e.getEntity().getWorld().getName().contains("lobby")) return;
+        if (Shard.getShard(e.getEntity().getWorld().getName()) == null || !(Shard.getShard(e.getEntity().getWorld().getName()) instanceof LobbyShard))
+            return;
         e.setCancelled(true);
     }
 
     @EventHandler
     public void onFoodLevelChange(FoodLevelChangeEvent e) {
-        if (!e.getEntity().getWorld().getName().contains("lobby")) return;
+        if (Shard.getShard(e.getEntity().getWorld().getName()) == null || !(Shard.getShard(e.getEntity().getWorld().getName()) instanceof LobbyShard))
+            return;
         e.setCancelled(true);
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
-        if (!e.getPlayer().getWorld().getName().contains("lobby")) return;
+        if (Shard.getShard(e.getPlayer().getWorld().getName()) == null || !(Shard.getShard(e.getPlayer().getWorld().getName()) instanceof LobbyShard))
+            return;
         e.setCancelled(true);
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent e) {
-        if (!e.getWhoClicked().getWorld().getName().contains("lobby")) return;
+        if (Shard.getShard(e.getWhoClicked().getWorld().getName()) == null || !(Shard.getShard(e.getWhoClicked().getWorld().getName()) instanceof LobbyShard))
+            return;
         e.setCancelled(true);
     }
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
-        if (!e.getPlayer().getWorld().getName().contains("lobby")) return;
+        if (Shard.getShard(e.getPlayer().getWorld().getName()) == null || !(Shard.getShard(e.getPlayer().getWorld().getName()) instanceof LobbyShard))
+            return;
+        if (e.getPlayer().getLocation().getY() == 121) {
+            if(e.getClickedBlock() != null && e.getClickedBlock().getState() != null) {
+                if (e.getClickedBlock().getState() instanceof Sign) {
+                    GamePlayer gamePlayer = GamePlayer.wrap(e.getPlayer());
+                    if (!gamePlayer.isParkourAwarded()) {
+                        gamePlayer.setParkourAwarded(true);
+                        gamePlayer.changeCoins(1500);
+                        GameApi.getUserManager().get(e.getPlayer()).getNetworkLevel().addExperience(500);
+                    }
+                }
+            }
+        }
         if (!e.getPlayer().isOp() && !e.hasItem()) {
             e.setCancelled(true);
         } else if (e.hasItem() && e.getItem().getType() == Material.COMPASS) {
@@ -80,13 +106,15 @@ public class LobbyHandler implements Listener {
 
     @EventHandler
     public void onDrop(PlayerDropItemEvent e) {
-        if (!e.getPlayer().getWorld().getName().contains("lobby")) return;
+        if (Shard.getShard(e.getPlayer().getWorld().getName()) == null || !(Shard.getShard(e.getPlayer().getWorld().getName()) instanceof LobbyShard))
+            return;
         e.setCancelled(true);
     }
 
     @EventHandler
     public void onPickup(PlayerPickupItemEvent e) {
-        if (!e.getPlayer().getWorld().getName().contains("lobby")) return;
+        if (Shard.getShard(e.getPlayer().getWorld().getName()) == null || !(Shard.getShard(e.getPlayer().getWorld().getName()) instanceof LobbyShard))
+            return;
         e.setCancelled(true);
     }
 }

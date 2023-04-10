@@ -1,125 +1,81 @@
 package net.villenium.skywars.utils;
 
+import com.grinderwolf.swm.api.exceptions.CorruptedWorldException;
+import com.grinderwolf.swm.api.exceptions.NewerFormatException;
+import com.grinderwolf.swm.api.exceptions.UnknownWorldException;
+import com.grinderwolf.swm.api.exceptions.WorldInUseException;
+import com.grinderwolf.swm.api.world.SlimeWorld;
+import com.grinderwolf.swm.api.world.properties.SlimeProperties;
+import com.grinderwolf.swm.api.world.properties.SlimePropertyMap;
+import net.villenium.skywars.SkyWars;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.io.File;
+import java.io.IOException;
 
 public class WorldUtil {
 
-    public static void deleteWorld(File path) {
-        if (path.exists()) {
-            File files[] = path.listFiles();
-            for (int i = 0; i < files.length; i++) {
-                if (files[i].isDirectory()) {
-                    deleteWorld(files[i]);
-                } else {
-                    files[i].delete();
-                }
-            }
+    public static void unloadWorld(String worldName) {
+        World world = Bukkit.getWorld(worldName);
+        if (world == null) {
+            return;
         }
-        path.delete();
-    }
-
-    public static void deleteWorld(World world) {
-        File path = world.getWorldFolder();
-        if (path.exists()) {
-            File files[] = path.listFiles();
-            for (int i = 0; i < files.length; i++) {
-                if (files[i].isDirectory()) {
-                    deleteWorld(files[i]);
-                } else {
-                    files[i].delete();
-                }
-            }
-        }
-        path.delete();
-        Bukkit.unloadWorld(world, false);
-    }
-
-    public static void deleteWorld(String world) {
-        if (Bukkit.getWorld(world) == null) return;
-        File path = Bukkit.getWorld(world).getWorldFolder();
-        if (path.exists()) {
-            File files[] = path.listFiles();
-            for (int i = 0; i < files.length; i++) {
-                if (files[i].isDirectory()) {
-                    deleteWorld(files[i]);
-                } else {
-                    files[i].delete();
-                }
-            }
-        }
-        path.delete();
-        Bukkit.unloadWorld(world, false);
-    }
-
-    public static void copyWorld(String worldToCopy, String newWorld) {
-        if (Bukkit.getWorld(worldToCopy) == null) return;
-
-        File source = Bukkit.getWorld(worldToCopy).getWorldFolder();
-        World newW = Bukkit.createWorld(new WorldCreator(newWorld));
-        File target = newW.getWorldFolder();
 
         try {
-            ArrayList<String> ignore = new ArrayList<String>(Arrays.asList("uid.dat", "session.dat"));
-            if (!ignore.contains(source.getName())) {
-                if (source.isDirectory()) {
-                    if (!target.exists())
-                        target.mkdirs();
-                    String files[] = source.list();
-                    for (String file : files) {
-                        File srcFile = new File(source, file);
-                        File destFile = new File(target, file);
-                        copyWorld(srcFile, destFile);
-                    }
-                } else {
-                    InputStream in = new FileInputStream(source);
-                    OutputStream out = new FileOutputStream(target);
-                    byte[] buffer = new byte[1024];
-                    int length;
-                    while ((length = in.read(buffer)) > 0)
-                        out.write(buffer, 0, length);
-                    in.close();
-                    out.close();
-                }
+            if (SkyWars.getInstance().getSlimeLoader().worldExists(worldName)) {
+                Bukkit.unloadWorld(world, false);
+                SkyWars.getInstance().getSlimeLoader().deleteWorld(worldName);
             }
         } catch (IOException e) {
-
+            throw new RuntimeException(e);
+        } catch (UnknownWorldException e) {
+            throw new RuntimeException(e);
         }
-        Bukkit.unloadWorld(newW, false);
-        Bukkit.createWorld(new WorldCreator(newWorld));
     }
 
-    public static void copyWorld(File source, File target) {
-        try {
-            ArrayList<String> ignore = new ArrayList<String>(Arrays.asList("uid.dat", "session.dat"));
-            if (!ignore.contains(source.getName())) {
-                if (source.isDirectory()) {
-                    if (!target.exists())
-                        target.mkdirs();
-                    String files[] = source.list();
-                    for (String file : files) {
-                        File srcFile = new File(source, file);
-                        File destFile = new File(target, file);
-                        copyWorld(srcFile, destFile);
-                    }
-                } else {
-                    InputStream in = new FileInputStream(source);
-                    OutputStream out = new FileOutputStream(target);
-                    byte[] buffer = new byte[1024];
-                    int length;
-                    while ((length = in.read(buffer)) > 0)
-                        out.write(buffer, 0, length);
-                    in.close();
-                    out.close();
-                }
-            }
-        } catch (IOException e) {
+    public static void loadWorld(String worldName) {
 
+        World world = Bukkit.getWorld(worldName);
+
+        if (world != null) {
+            unloadWorld(world.getName());
         }
+
+        SlimePropertyMap map = new SlimePropertyMap();
+        map.setString(SlimeProperties.DIFFICULTY, "EASY");
+        map.setBoolean(SlimeProperties.ALLOW_ANIMALS, false);
+        map.setBoolean(SlimeProperties.ALLOW_MONSTERS, true);
+        map.setBoolean(SlimeProperties.PVP, true);
+        map.setInt(SlimeProperties.SPAWN_X, 0);
+        map.setInt(SlimeProperties.SPAWN_Y, 79);
+        map.setInt(SlimeProperties.SPAWN_Z, -6);
+
+
+        SlimeWorld slimeWorld = null;
+        try {
+            slimeWorld = SkyWars.getInstance().getSlimePlugin().loadWorld(SkyWars.getInstance().getSlimeLoader(), worldName, true, map);
+        } catch (UnknownWorldException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (CorruptedWorldException e) {
+            throw new RuntimeException(e);
+        } catch (NewerFormatException e) {
+            throw new RuntimeException(e);
+        } catch (WorldInUseException e) {
+            throw new RuntimeException(e);
+        }
+        SkyWars.getInstance().getSlimePlugin().generateWorld(slimeWorld);
+
+    }
+
+    public static void cloneWorld(String worldName, String newWorld) {
+
+        File worldFile = new File(new File("slime_worlds/"), worldName + ".slime");
+
+        FileUtils.copyFiles(worldFile, new File(new File("slime_worlds/"), newWorld + ".slime"));
+
+        loadWorld(newWorld);
     }
 }

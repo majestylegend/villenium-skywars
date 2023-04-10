@@ -5,26 +5,20 @@ import net.villenium.skywars.enums.GamePhase;
 import net.villenium.skywars.player.GamePlayer;
 import net.villenium.skywars.player.VScoreboard;
 import net.villenium.skywars.shards.GameShard;
-import net.villenium.skywars.utils.SCTeam;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public class GameTeam {
     private final GameShard game;
     private final Set<Player> players = new HashSet();
     private final Set<Player> playersOnStart = new HashSet();
-    private SCTeam friends;
-    private SCTeam enemies;
     private String info;
-    private Location spawn;
+    private List<Location> spawns = new ArrayList<>();
+
+    private int id;
 
     public GameTeam(Collection<Player> players, GameShard game) {
         this.game = game;
@@ -32,13 +26,13 @@ public class GameTeam {
         this.players.addAll(players);
         this.playersOnStart.addAll(players);
         StringBuilder sb = new StringBuilder();
+        this.id = ++game.teamsCount;
         players.forEach((p) -> {
             sb.append(GameApi.getUserManager().get(p).getFullDisplayName()).append(ChatColor.RESET).append(", ");
             GamePlayer.wrap(p).setTeam(this);
         });
         this.info = sb.toString();
         this.info = this.info.substring(0, this.info.length() - 2);
-        this.loadTab();
     }
 
     public void quit(Player p) {
@@ -54,8 +48,7 @@ public class GameTeam {
 
     public void remove(Player p) {
         if (this.players.remove(p)) {
-            GamePlayer.wrap(p).setTeam((GameTeam) null);
-            this.friends.removePlayerSilently(this.players, new Player[]{p});
+            GamePlayer.wrap(p).setTeam(null);
             if (this.players.isEmpty()) {
                 this.game.getTeams().getTeams().remove(this);
 
@@ -68,11 +61,10 @@ public class GameTeam {
                     this.showLoseMessage();
                 }
             }
-        } else {
-            this.enemies.removePlayerSilently(this.players, new Player[]{p});
         }
-        this.players.forEach((player -> {
-            VScoreboard.updateTeamsLeft(GamePlayer.wrap(player));
+        this.getPlayersOnStart().forEach((player -> {
+            if(player != null)
+                VScoreboard.updateTeamsLeft(GamePlayer.wrap(player));
         }));
     }
 
@@ -80,26 +72,19 @@ public class GameTeam {
         return this.players.contains(p);
     }
 
-    private void loadTab() {
-        List<String> list = (List) this.players.stream().map(OfflinePlayer::getName).collect(Collectors.toList());
-        this.friends = new SCTeam("friends", "&a", "", list);
-        list = (List) this.game.getPlayers().stream().filter((p) -> {
-            return !this.isInTeam(p);
-        }).map(OfflinePlayer::getName).collect(Collectors.toList());
-        this.enemies = new SCTeam("enemies", "&c", "", list);
-        this.friends.create(this.players);
-        this.enemies.create(this.players);
-    }
-
     public void showLoseMessage() {
         if (this.playersOnStart.size() > 1) {
-
+            this.game.pb("&cКоманда %s &cуничтожена!", new Object[]{this.info});
         }
 
     }
 
     public GameShard getGame() {
         return this.game;
+    }
+
+    public int getId() {
+        return this.id;
     }
 
     public Set<Player> getPlayers() {
@@ -114,11 +99,11 @@ public class GameTeam {
         return this.info;
     }
 
-    public Location getSpawn() {
-        return this.spawn;
+    public List<Location> getSpawns() {
+        return this.spawns;
     }
 
     public void setSpawn(Location spawn) {
-        this.spawn = spawn;
+        this.spawns.add(spawn);
     }
 }

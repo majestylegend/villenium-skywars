@@ -19,7 +19,6 @@ public class GamePerkManager {
         add(new GamePerk("Speed_Boost", "Ускорение", "Вы получаете эффект скорости I на %d секунд при старте.", Rarity.RARE, Material.BREWING_STAND_ITEM, 5, new int[]{0, 5000, 15000, 20000, 25000, 15, 17, 19, 22, 25}));
         add(new GamePerk("Resistance_Boost", "Сопротивление", "Вы получаете эффект сопротивления на %d секунд при старте.", Rarity.COMMON, Material.IRON_CHESTPLATE, 3, new int[]{0, 5000, 25000, 12, 16, 20}));
         add(new GamePerk("Instant_Smelting", "Мгновенная переплавка", "Теперь все в печке переплавляется мгновенно.", Rarity.COMMON, Material.FURNACE, 1, new int[]{0, 0}));
-        add(new GamePerk("CoolRandom", "Счастливчик", "Минимально возможный уровень случайно выбираемых классов увеличен до %d.", Rarity.LEGENDARY, Material.DRAGON_EGG, 2, new int[]{0, 50000, 2, 3}));
     }
 
     private static void add(GamePerk gp) {
@@ -31,6 +30,6 @@ public class GamePerkManager {
     }
 
     public static GamePerk getPerk(String name) {
-        return (GamePerk) PERKS.get(name);
+        return PERKS.get(name);
     }
 }
